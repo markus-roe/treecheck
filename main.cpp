@@ -22,7 +22,8 @@ void printBalanceFactors(Node *node);
 void statistics(Node *node, int &min, int &max, int &sum, int &count);
 int countNodes(Node *node);
 bool isSubtree(Node *mainTree, Node *subtree);
-bool areTreesEqual(Node *tree1, Node *tree2);
+std::string findNodePath(Node *node, int key, bool &found);
+bool isSameStructure(Node *tree1, Node *tree2);
 
 int main()
 {
@@ -91,8 +92,24 @@ int main()
                 }
                 subtreeFile.close();
 
-                bool subtreeFound = isSubtree(root, subtreeRoot);
-                std::cout << (subtreeFound ? "Subtree found" : "Subtree not found!") << std::endl;
+                if (countNodes(subtreeRoot) == 1)
+                {
+                    bool found = false;
+                    std::string path = findNodePath(root, subtreeRoot->key, found);
+                    if (found)
+                    {
+                        std::cout << subtreeRoot->key << " found " << path << std::endl;
+                    }
+                    else
+                    {
+                        std::cout << subtreeRoot->key << " not found!" << std::endl;
+                    }
+                }
+                else
+                {
+                    bool subtreeFound = isSubtree(root, subtreeRoot);
+                    std::cout << (subtreeFound ? "Subtree found" : "Subtree not found!") << std::endl;
+                }
             }
         }
         else
@@ -119,6 +136,15 @@ Node *insert(Node *node, int key)
         node->right = insert(node->right, key);
     }
     return node;
+}
+
+int countNodes(Node *node)
+{
+    if (node == nullptr)
+    {
+        return 0;
+    }
+    return 1 + countNodes(node->left) + countNodes(node->right);
 }
 
 int height(Node *node)
@@ -185,24 +211,57 @@ bool isSubtree(Node *mainTree, Node *subtree)
     {
         return false;
     }
-    if (areTreesEqual(mainTree, subtree))
+
+    if (mainTree->key == subtree->key && isSameStructure(mainTree, subtree))
     {
         return true;
     }
     return isSubtree(mainTree->left, subtree) || isSubtree(mainTree->right, subtree);
 }
 
-bool areTreesEqual(Node *tree1, Node *tree2)
+bool isSameStructure(Node *tree1, Node *tree2)
 {
-    if (tree1 == nullptr && tree2 == nullptr)
+    if (tree2 == nullptr)
     {
         return true;
     }
-    if (tree1 == nullptr || tree2 == nullptr)
+    if (tree1 == nullptr)
     {
         return false;
     }
-    return tree1->key == tree2->key &&
-           areTreesEqual(tree1->left, tree2->left) &&
-           areTreesEqual(tree1->right, tree2->right);
+    if (tree1->key == tree2->key &&
+        isSameStructure(tree1->left, tree2->left) &&
+        isSameStructure(tree1->right, tree2->right))
+    {
+        return true;
+    }
+    return isSameStructure(tree1->left, tree2) || isSameStructure(tree1->right, tree2);
+}
+
+std::string findNodePath(Node *node, int key, bool &found)
+{
+    if (node == nullptr)
+    {
+        return "";
+    }
+
+    if (node->key == key)
+    {
+        found = true;
+        return std::to_string(key);
+    }
+
+    std::string leftPath = findNodePath(node->left, key, found);
+    if (found)
+    {
+        return std::to_string(node->key) + ", " + leftPath;
+    }
+
+    std::string rightPath = findNodePath(node->right, key, found);
+    if (found)
+    {
+        return std::to_string(node->key) + ", " + rightPath;
+    }
+
+    return "";
 }
