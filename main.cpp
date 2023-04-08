@@ -25,6 +25,7 @@ int countNodes(Node *node);
 bool isSubtree(Node *mainTree, Node *subtree);
 std::string findNodePath(Node *node, int key, bool &found);
 bool isSameStructure(Node *tree1, Node *tree2);
+void deleteTree(Node *node);
 
 int main()
 {
@@ -121,6 +122,8 @@ int main()
         }
     }
 
+    deleteTree(root);
+    deleteTree(subtreeRoot);
     return 0;
 }
 
@@ -280,4 +283,16 @@ std::string findNodePath(Node *node, int key, bool &found)
     }
 
     return "";
+}
+
+void deleteTree(Node *node)
+{
+    if (node == nullptr)
+    {
+        return;
+    }
+
+    deleteTree(node->left);
+    deleteTree(node->right);
+    delete node;
 }
