@@ -114,7 +114,10 @@ int main()
                     bool subtreeFound = isSubtree(root, subtreeRoot);
                     std::cout << (subtreeFound ? "Subtree found" : "Subtree not found!") << std::endl;
                 }
+
+                deleteTree(subtreeRoot);
             }
+            deleteTree(root);
         }
         else
         {
@@ -122,8 +125,6 @@ int main()
         }
     }
 
-    deleteTree(root);
-    deleteTree(subtreeRoot);
     return 0;
 }
 
