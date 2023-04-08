@@ -11,12 +11,13 @@ struct Node
     int key;
     Node *left;
     Node *right;
+    int balanceFactor;
 };
 
 // Prototypes
 Node *insert(Node *node, int key);
 int height(Node *node);
-int balanceFactor(Node *node);
+void calculateBalanceFactors(Node *node);
 bool isAVL(Node *node);
 void printBalanceFactors(Node *node);
 void statistics(Node *node, int &min, int &max, int &sum, int &count);
@@ -62,6 +63,8 @@ int main()
                 root = insert(root, key);
             }
             inputFile.close();
+
+            calculateBalanceFactors(root);
 
             printBalanceFactors(root);
             bool avl = isAVL(root);
@@ -156,9 +159,22 @@ int height(Node *node)
     return 1 + std::max(height(node->left), height(node->right));
 }
 
-int balanceFactor(Node *node)
+// int balanceFactor(Node *node)
+// {
+//     return height(node->right) - height(node->left);
+// }
+
+void calculateBalanceFactors(Node *node)
 {
-    return height(node->right) - height(node->left);
+    if (node == nullptr)
+    {
+        return;
+    }
+
+    calculateBalanceFactors(node->left);
+    calculateBalanceFactors(node->right);
+
+    node->balanceFactor = height(node->right) - height(node->left);
 }
 
 bool isAVL(Node *node)
@@ -167,7 +183,7 @@ bool isAVL(Node *node)
     {
         return true;
     }
-    return std::abs(balanceFactor(node)) <= 1 && isAVL(node->left) && isAVL(node->right);
+    return std::abs(node->balanceFactor) <= 1 && isAVL(node->left) && isAVL(node->right);
 }
 
 void printBalanceFactors(Node *node)
@@ -177,7 +193,7 @@ void printBalanceFactors(Node *node)
         return;
     }
     printBalanceFactors(node->left);
-    int bf = balanceFactor(node);
+    int bf = node->balanceFactor;
     std::cout << "bal(" << node->key << ") = " << bf;
     if (bf > 1 || bf < -1)
     {
