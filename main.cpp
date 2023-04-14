@@ -27,115 +27,99 @@ std::string findNodePath(Node *node, int key, bool &found);
 bool isSameStructure(Node *tree1, Node *tree2);
 void deleteTree(Node *node);
 
-int main()
+int main(int argc, char *argv[])
 {
-    std::string command;
-    std::string input;
-
-    while (true)
+    if (argc < 2)
     {
-        std::cout << "Enter a command: ";
-        std::getline(std::cin, input);
-        std::stringstream ss(input);
-        ss >> command;
+        std::cerr << "Usage: " << argv[0] << " filename-suchbaum [filename-subtree]" << std::endl;
+        return 1;
+    }
 
-        // Handling the 'treecheck' command
-        if (command == "treecheck")
+    std::string param1 = argv[1];
+    std::string param2;
+
+    if (argc == 3)
+    {
+        param2 = argv[2];
+    }
+
+    // Read the main tree file
+    std::ifstream inputFile(param1);
+    if (!inputFile)
+    {
+        std::cerr << "Error opening input file: " << param1 << std::endl;
+        return 1;
+    }
+
+    // Insert keys into the main tree
+    Node *root = nullptr;
+    int key;
+    while (inputFile >> key)
+    {
+        root = insert(root, key);
+    }
+    inputFile.close();
+
+    // Calculate balance factors
+    calculateBalanceFactors(root);
+
+    // Print balance factors
+    printBalanceFactors(root);
+
+    // Check if the tree is an AVL tree
+    bool avl = isAVL(root);
+    std::cout << "AVL: " << (avl ? "yes" : "no") << std::endl;
+
+    // Calculate and print tree statistics
+    int min = std::numeric_limits<int>::max();
+    int max = std::numeric_limits<int>::min();
+    int sum = 0;
+    int count = 0;
+    statistics(root, min, max, sum, count);
+    double avg = static_cast<double>(sum) / count;
+    std::cout << "min: " << min << ", max: " << max << ", avg: " << avg << std::endl;
+
+    // Read the subtree file (if provided)
+    if (!param2.empty())
+    {
+        std::ifstream subtreeFile(param2);
+        if (!subtreeFile)
         {
-            std::string param1, param2;
-            ss >> param1;
+            std::cerr << "Error opening subtree file: " << param2 << std::endl;
+            return 1;
+        }
 
-            // Check for required filename argument
-            if (param1.empty())
+        // Insert keys into the subtree
+        Node *subtreeRoot = nullptr;
+        while (subtreeFile >> key)
+        {
+            subtreeRoot = insert(subtreeRoot, key);
+        }
+        subtreeFile.close();
+
+        // Check if the subtree is present in the main tree
+        if (countNodes(subtreeRoot) == 1)
+        {
+            bool found = false;
+            std::string path = findNodePath(root, subtreeRoot->key, found);
+            if (found)
             {
-                std::cerr << "Usage: treecheck filename-suchbaum [filename-subtree]" << std::endl;
-                continue;
+                std::cout << subtreeRoot->key << " found " << path << std::endl;
             }
-
-            // Read the main tree file
-            std::ifstream inputFile(param1);
-            if (!inputFile)
+            else
             {
-                std::cerr << "Error opening input file: " << param1 << std::endl;
-                continue;
+                std::cout << subtreeRoot->key << " not found!" << std::endl;
             }
-
-            // Insert keys into the main tree
-            Node *root = nullptr;
-            int key;
-            while (inputFile >> key)
-            {
-                root = insert(root, key);
-            }
-            inputFile.close();
-
-            // Calculate balance factors
-            calculateBalanceFactors(root);
-
-            // Print balance factors
-            printBalanceFactors(root);
-
-            // Check if the tree is an AVL tree
-            bool avl = isAVL(root);
-            std::cout << "AVL: " << (avl ? "yes" : "no") << std::endl;
-
-            // Calculate and print tree statistics
-            int min = std::numeric_limits<int>::max();
-            int max = std::numeric_limits<int>::min();
-            int sum = 0;
-            int count = 0;
-            statistics(root, min, max, sum, count);
-            double avg = static_cast<double>(sum) / count;
-            std::cout << "min: " << min << ", max: " << max << ", avg: " << avg << std::endl;
-
-            // Read the subtree file (if provided)
-            ss >> param2;
-            if (!param2.empty())
-            {
-                std::ifstream subtreeFile(param2);
-                if (!subtreeFile)
-                {
-                    std::cerr << "Error opening subtree file: " << param2 << std::endl;
-                    continue;
-                }
-
-                // Insert keys into the subtree
-                Node *subtreeRoot = nullptr;
-                while (subtreeFile >> key)
-                {
-                    subtreeRoot = insert(subtreeRoot, key);
-                }
-                subtreeFile.close();
-
-                // Check if the subtree is present in the main tree
-                if (countNodes(subtreeRoot) == 1)
-                {
-                    bool found = false;
-                    std::string path = findNodePath(root, subtreeRoot->key, found);
-                    if (found)
-                    {
-                        std::cout << subtreeRoot->key << " found " << path << std::endl;
-                    }
-                    else
-                    {
-                        std::cout << subtreeRoot->key << " not found!" << std::endl;
-                    }
-                }
-                else
-                {
-                    bool subtreeFound = isSubtree(root, subtreeRoot);
-                    std::cout << (subtreeFound ? "Subtree found" : "Subtree not found!") << std::endl;
-                }
-
-                deleteTree(subtreeRoot);
-            }
-            deleteTree(root);
         }
         else
         {
-            std::cerr << "Invalid command. Please enter 'treecheck' followed by the file names." << std::endl;
+            bool subtreeFound = isSubtree(root, subtreeRoot);
+            std::cout << (subtreeFound ? "Subtree found" : "Subtree not found!") << std::endl;
         }
+
+        deleteTree(subtreeRoot);
     }
+    deleteTree(root);
 
     return 0;
 }
@@ -238,40 +222,28 @@ void statistics(Node *node, int &min, int &max, int &sum, int &count)
 // Check if a subtree is present in a main tree
 bool isSubtree(Node *mainTree, Node *subtree)
 {
-    if (subtree == nullptr)
-    {
-        return true;
-    }
-    if (mainTree == nullptr)
-    {
-        return false;
-    }
-
-    if (mainTree->key == subtree->key && isSameStructure(mainTree, subtree))
-    {
-        return true;
-    }
-    return isSubtree(mainTree->left, subtree) || isSubtree(mainTree->right, subtree);
+    // Check if the main tree and subtree have the same structure and values,
+    // or if the subtree is present in the left or right subtree of the main tree
+    return (mainTree != nullptr) && (isSameStructure(mainTree, subtree) || isSubtree(mainTree->left, subtree) || isSubtree(mainTree->right, subtree));
 }
 
-// Check if a subtree is present in a main tree, or if the main tree has the same structure and values as the subtree
+// Check if two trees have the same structure and values
 bool isSameStructure(Node *tree1, Node *tree2)
 {
-    if (tree2 == nullptr)
+    if (tree1 == nullptr && tree2 == nullptr)
     {
         return true;
     }
-    if (tree1 == nullptr)
+
+    if (tree1 == nullptr || tree2 == nullptr)
     {
         return false;
     }
-    if (tree1->key == tree2->key &&
-        isSameStructure(tree1->left, tree2->left) &&
-        isSameStructure(tree1->right, tree2->right))
-    {
-        return true;
-    }
-    return isSameStructure(tree1->left, tree2) || isSameStructure(tree1->right, tree2);
+
+    // Check if the current nodes have the same value, and if the left and right subtrees of both trees also have the same structure and values
+    return (tree1->key == tree2->key) &&
+           isSameStructure(tree1->left, tree2->left) &&
+           isSameStructure(tree1->right, tree2->right);
 }
 
 // Find the path from the root to a node with the specified key in a binary search tree
