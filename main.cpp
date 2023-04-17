@@ -21,7 +21,6 @@ void calculateBalanceFactors(Node *node);
 bool isAVL(Node *node);
 void printBalanceFactors(Node *node);
 void statistics(Node *node, int &min, int &max, int &sum, int &count);
-int countNodes(Node *node);
 bool isSubtree(Node *mainTree, Node *subtree);
 std::string findNodePath(Node *node, int key, bool &found);
 bool isSameStructure(Node *tree1, Node *tree2);
@@ -31,7 +30,7 @@ int main(int argc, char *argv[])
 {
     if (argc < 2)
     {
-        std::cerr << "Usage: " << argv[0] << " filename-suchbaum [filename-subtree]" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " [filename-suchbaum] [filename-subtree]" << std::endl;
         return 1;
     }
 
@@ -91,14 +90,16 @@ int main(int argc, char *argv[])
 
         // Insert keys into the subtree
         Node *subtreeRoot = nullptr;
+        int subtreeCounter = 0;
         while (subtreeFile >> key)
         {
             subtreeRoot = insert(subtreeRoot, key);
+            subtreeCounter++;
         }
         subtreeFile.close();
 
         // Check if the subtree is present in the main tree
-        if (countNodes(subtreeRoot) == 1)
+        if (subtreeCounter == 1)
         {
             bool found = false;
             std::string path = findNodePath(root, subtreeRoot->key, found);
@@ -129,7 +130,7 @@ Node *insert(Node *node, int key)
 {
     if (node == nullptr)
     {
-        node = new Node{key, nullptr, nullptr};
+        node = new Node{key, nullptr, nullptr, -1};
     }
     else if (key < node->key)
     {
@@ -140,16 +141,6 @@ Node *insert(Node *node, int key)
         node->right = insert(node->right, key);
     }
     return node;
-}
-
-// Count the number of nodes in a binary tree
-int countNodes(Node *node)
-{
-    if (node == nullptr)
-    {
-        return 0;
-    }
-    return 1 + countNodes(node->left) + countNodes(node->right);
 }
 
 // Calculate the height of a binary tree
@@ -193,6 +184,7 @@ void printBalanceFactors(Node *node)
     {
         return;
     }
+    printBalanceFactors(node->right);
     printBalanceFactors(node->left);
     int bf = node->balanceFactor;
     std::cout << "bal(" << node->key << ") = " << bf;
@@ -201,7 +193,6 @@ void printBalanceFactors(Node *node)
         std::cout << " (AVL violation!)";
     }
     std::cout << std::endl;
-    printBalanceFactors(node->right);
 }
 
 // Calculate tree statistics (min, max, sum, count)
@@ -227,23 +218,24 @@ bool isSubtree(Node *mainTree, Node *subtree)
     return (mainTree != nullptr) && (isSameStructure(mainTree, subtree) || isSubtree(mainTree->left, subtree) || isSubtree(mainTree->right, subtree));
 }
 
-// Check if two trees have the same structure and values
+// Check if a subtree is present in a main tree, or if the main tree has the same structure and values as the subtree
 bool isSameStructure(Node *tree1, Node *tree2)
 {
-    if (tree1 == nullptr && tree2 == nullptr)
+    if (tree2 == nullptr)
     {
         return true;
     }
-
-    if (tree1 == nullptr || tree2 == nullptr)
+    if (tree1 == nullptr)
     {
         return false;
     }
-
-    // Check if the current nodes have the same value, and if the left and right subtrees of both trees also have the same structure and values
-    return (tree1->key == tree2->key) &&
-           isSameStructure(tree1->left, tree2->left) &&
-           isSameStructure(tree1->right, tree2->right);
+    if (tree1->key == tree2->key &&
+        isSameStructure(tree1->left, tree2->left) &&
+        isSameStructure(tree1->right, tree2->right))
+    {
+        return true;
+    }
+    return isSameStructure(tree1->left, tree2) || isSameStructure(tree1->right, tree2);
 }
 
 // Find the path from the root to a node with the specified key in a binary search tree
